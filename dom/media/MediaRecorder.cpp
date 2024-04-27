@@ -387,7 +387,9 @@ public:
   {
     MOZ_ASSERT(NS_IsMainThread());
 
-    mEncodedBufferCache = new EncodedBufferCache(MAX_ALLOW_MEMORY_BUFFER);
+    uint32_t maxMem = Preferences::GetUint("media.recorder.max_memory",
+                                           MAX_ALLOW_MEMORY_BUFFER);
+    mEncodedBufferCache = new EncodedBufferCache(maxMem);
     mLastBlobTimeStamp = TimeStamp::Now();
   }
 
@@ -556,6 +558,10 @@ private:
 
   bool CheckPermission(const char* aType)
   {
+    if (!mRecorder || !mRecorder->GetOwner()) {
+      return false;
+    }
+
     nsCOMPtr<nsIDocument> doc = mRecorder->GetOwner()->GetExtantDoc();
     if (!doc) {
       return false;
@@ -1159,7 +1165,7 @@ MediaRecorder::GetSourcePrincipal()
     return mDOMStream->GetPrincipal();
   }
   MOZ_ASSERT(mAudioNode != nullptr);
-  nsIDocument* doc = mAudioNode->GetOwner()->GetExtantDoc();
+  nsIDocument* doc = mAudioNode->GetOwner() ? mAudioNode->GetOwner()->GetExtantDoc() : nullptr;
   return doc ? doc->NodePrincipal() : nullptr;
 }
 
