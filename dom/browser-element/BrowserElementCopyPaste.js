@@ -30,7 +30,7 @@ var CopyPasteAssistent = {
     switch (e.data.msg_name) {
       case 'copypaste-do-command':
         if (this._isCommandEnabled(e.data.command)) {
-          docShell.doCommand(COMMAND_MAP[e.data.command]);
+          docShell.doCommand(this.COMMAND_MAP[e.data.command]);
         }
         break;
     }
@@ -89,7 +89,7 @@ var CopyPasteAssistent = {
       let targetDocShell = currentWindow
           .QueryInterface(Ci.nsIInterfaceRequestor)
           .getInterface(Ci.nsIWebNavigation);
-      if(targetDocShell.isBrowserOrApp) {
+      if(targetDocShell.isMozBrowserOrApp) {
         break;
       }
     }

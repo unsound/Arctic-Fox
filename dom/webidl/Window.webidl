@@ -69,7 +69,7 @@ typedef any Transferable;
 #ifdef HAVE_SIDEBAR
   [Replaceable, Throws] readonly attribute External external;
 #endif
-  [Throws] readonly attribute ApplicationCache applicationCache;
+  [Throws, Pref="browser.cache.offline.enable"] readonly attribute ApplicationCache applicationCache;
 
   // user prompts
   [Throws, UnsafeInPrerendering] void alert();
@@ -93,10 +93,10 @@ Window implements WindowEventHandlers;
 interface WindowTimers {
   [Throws] long setTimeout(Function handler, optional long timeout = 0, any... arguments);
   [Throws] long setTimeout(DOMString handler, optional long timeout = 0, any... unused);
-  [Throws] void clearTimeout(optional long handle = 0);
+  void clearTimeout(optional long handle = 0);
   [Throws] long setInterval(Function handler, optional long timeout, any... arguments);
   [Throws] long setInterval(DOMString handler, optional long timeout, any... unused);
-  [Throws] void clearInterval(optional long handle = 0);
+  void clearInterval(optional long handle = 0);
 };
 Window implements WindowTimers;
 
@@ -269,7 +269,7 @@ Window implements WindowModal;
 
 // https://slightlyoff.github.io/ServiceWorker/spec/service_worker/index.html#self-caches
 partial interface Window {
-[Throws, Func="mozilla::dom::cache::CacheStorage::PrefEnabled"]
+[Throws, Func="mozilla::dom::cache::CacheStorage::PrefEnabled", SameObject]
 readonly attribute CacheStorage caches;
 };
 

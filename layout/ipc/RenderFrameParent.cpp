@@ -20,7 +20,7 @@
 #include "mozilla/dom/TabParent.h"
 #include "mozilla/layers/APZCTreeManager.h"
 #include "mozilla/layers/APZThreadUtils.h"
-#include "mozilla/layers/CompositorParent.h"
+#include "mozilla/layers/CompositorBridgeParent.h"
 #include "mozilla/layers/LayerTransactionParent.h"
 #include "nsContentUtils.h"
 #include "nsFocusManager.h"
@@ -32,7 +32,7 @@
 #include "nsViewportFrame.h"
 #include "RenderFrameParent.h"
 #include "mozilla/layers/LayerManagerComposite.h"
-#include "mozilla/layers/CompositorChild.h"
+#include "mozilla/layers/CompositorBridgeChild.h"
 #include "ClientLayerManager.h"
 #include "FrameLayerBuilder.h"
 
@@ -106,9 +106,8 @@ RenderFrameParent::RenderFrameParent(nsFrameLoader* aFrameLoader,
   mAsyncPanZoomEnabled = lm && lm->AsyncPanZoomEnabled();
 
   // Perhaps the document containing this frame currently has no presentation?
-  if (lm && lm->GetBackendType() == LayersBackend::LAYERS_CLIENT) {
-    *aTextureFactoryIdentifier =
-      static_cast<ClientLayerManager*>(lm.get())->GetTextureFactoryIdentifier();
+  if (lm && lm->AsClientLayerManager()) {
+    *aTextureFactoryIdentifier = lm->AsClientLayerManager()->GetTextureFactoryIdentifier();
   } else {
     *aTextureFactoryIdentifier = TextureFactoryIdentifier();
   }
@@ -119,15 +118,13 @@ RenderFrameParent::RenderFrameParent(nsFrameLoader* aFrameLoader,
     // and we'll keep an indirect reference to that tree.
     browser->Manager()->AsContentParent()->AllocateLayerTreeId(browser, aId);
     mLayersId = *aId;
-    if (lm && lm->GetBackendType() == LayersBackend::LAYERS_CLIENT) {
-      ClientLayerManager *clientManager =
-        static_cast<ClientLayerManager*>(lm.get());
-      clientManager->GetRemoteRenderer()->SendNotifyChildCreated(mLayersId);
+    if (lm && lm->AsClientLayerManager()) {
+      lm->AsClientLayerManager()->GetRemoteRenderer()->SendNotifyChildCreated(mLayersId);
     }
   } else if (XRE_IsContentProcess()) {
     ContentChild::GetSingleton()->SendAllocateLayerTreeId(browser->Manager()->ChildID(), browser->GetTabId(), aId);
     mLayersId = *aId;
-    CompositorChild::Get()->SendNotifyChildCreated(mLayersId);
+    CompositorBridgeChild::Get()->SendNotifyChildCreated(mLayersId);
   }
   *aSuccess = true;
 }
@@ -208,10 +205,8 @@ RenderFrameParent::OwnerContentChanged(nsIContent* aContent)
 
   RefPtr<LayerManager> lm = mFrameLoader ? GetFrom(mFrameLoader) : nullptr;
   // Perhaps the document containing this frame currently has no presentation?
-  if (lm && lm->GetBackendType() == LayersBackend::LAYERS_CLIENT) {
-    ClientLayerManager *clientManager =
-      static_cast<ClientLayerManager*>(lm.get());
-    clientManager->GetRemoteRenderer()->SendAdoptChild(mLayersId);
+  if (lm && lm->AsClientLayerManager()) {
+    lm->AsClientLayerManager()->GetRemoteRenderer()->SendAdoptChild(mLayersId);
   }
 }
 
@@ -222,7 +217,7 @@ RenderFrameParent::ActorDestroy(ActorDestroyReason why)
     if (XRE_IsContentProcess()) {
       ContentChild::GetSingleton()->SendDeallocateLayerTreeId(mLayersId);
     } else {
-      CompositorParent::DeallocateLayerTreeId(mLayersId);
+      CompositorBridgeParent::DeallocateLayerTreeId(mLayersId);
     }
   }
 
@@ -294,9 +289,8 @@ RenderFrameParent::GetTextureFactoryIdentifier(TextureFactoryIdentifier* aTextur
 {
   RefPtr<LayerManager> lm = mFrameLoader ? GetFrom(mFrameLoader) : nullptr;
   // Perhaps the document containing this frame currently has no presentation?
-  if (lm && lm->GetBackendType() == LayersBackend::LAYERS_CLIENT) {
-    *aTextureFactoryIdentifier =
-      static_cast<ClientLayerManager*>(lm.get())->GetTextureFactoryIdentifier();
+  if (lm && lm->AsClientLayerManager()) {
+    *aTextureFactoryIdentifier = lm->AsClientLayerManager()->GetTextureFactoryIdentifier();
   } else {
     *aTextureFactoryIdentifier = TextureFactoryIdentifier();
   }
