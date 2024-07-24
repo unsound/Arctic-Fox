@@ -7,6 +7,8 @@ Components.utils.import("resource://gre/modules/DownloadUtils.jsm");
 Components.utils.import("resource://gre/modules/LoadContextInfo.jsm");
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 
+const PREF_UPLOAD_ENABLED = "datareporting.healthreport.uploadEnabled";
+
 var gAdvancedPane = {
   _inited: false,
 
@@ -289,38 +291,23 @@ var gAdvancedPane = {
   initSubmitHealthReport: function () {
     this._setupLearnMoreLink("datareporting.healthreport.infoURL", "FHRLearnMore");
 
-    let policy = Components.classes["@mozilla.org/datareporting/service;1"]
-                                   .getService(Components.interfaces.nsISupports)
-                                   .wrappedJSObject
-                                   .policy;
-
     let checkbox = document.getElementById("submitHealthReportBox");
 
-    if (!policy || policy.healthReportUploadLocked) {
+    if (Services.prefs.prefIsLocked(PREF_UPLOAD_ENABLED)) {
       checkbox.setAttribute("disabled", "true");
       return;
     }
 
-    checkbox.checked = policy.healthReportUploadEnabled;
+    checkbox.checked = Services.prefs.getBoolPref(PREF_UPLOAD_ENABLED);
     this.setTelemetrySectionEnabled(checkbox.checked);
   },
 
   /**
-   * Update the health report policy acceptance with state from checkbox.
+   * Update the health report preference with state from checkbox.
    */
   updateSubmitHealthReport: function () {
-    let policy = Components.classes["@mozilla.org/datareporting/service;1"]
-                                   .getService(Components.interfaces.nsISupports)
-                                   .wrappedJSObject
-                                   .policy;
-
-    if (!policy) {
-      return;
-    }
-
     let checkbox = document.getElementById("submitHealthReportBox");
-    policy.recordHealthReportUploadEnabled(checkbox.checked,
-                                           "Checkbox from preferences pane");
+    Services.prefs.setBoolPref(PREF_UPLOAD_ENABLED, checkbox.checked);
     this.setTelemetrySectionEnabled(checkbox.checked);
   },
 #endif
@@ -492,18 +479,22 @@ var gAdvancedPane = {
   },
 
   // XXX: duplicated in browser.js
-  _getOfflineAppUsage: function (perm, groups)
-  {
-    var cacheService = Components.classes["@mozilla.org/network/application-cache-service;1"].
-                       getService(Components.interfaces.nsIApplicationCacheService);
-    var ios = Components.classes["@mozilla.org/network/io-service;1"].
-              getService(Components.interfaces.nsIIOService);
+  _getOfflineAppUsage(perm, groups) {
+    let cacheService = Cc["@mozilla.org/network/application-cache-service;1"].
+                       getService(Ci.nsIApplicationCacheService);
+    if (!groups) {
+      try {
+        groups = cacheService.getGroups();
+      } catch (ex) {
+        return 0;
+      }
+    }
 
-    var usage = 0;
-    for (var i = 0; i < groups.length; i++) {
-      var uri = ios.newURI(groups[i], null, null);
+    let usage = 0;
+    for (let group of groups) {
+      let uri = Services.io.newURI(group, null, null);
       if (perm.matchesURI(uri, true)) {
-        var cache = cacheService.getActiveCache(groups[i]);
+        let cache = cacheService.getActiveCache(groups);
         usage += cache.usage;
       }
     }

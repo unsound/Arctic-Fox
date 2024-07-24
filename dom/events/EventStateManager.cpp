@@ -477,6 +477,30 @@ EventStateManager::TryToFlushPendingNotificationsToIME()
   }
 }
 
+static bool
+IsMessageMouseUserActivity(EventMessage aMessage)
+{
+  return aMessage == eMouseMove ||
+         aMessage == eMouseUp ||
+         aMessage == eMouseDown ||
+         aMessage == eMouseDoubleClick ||
+         aMessage == eMouseClick ||
+         aMessage == eMouseActivate ||
+         aMessage == eMouseLongTap;
+}
+
+static bool
+IsMessageGamepadUserActivity(EventMessage aMessage)
+{
+#ifndef MOZ_GAMEPAD
+  return false;
+#else
+  return aMessage == eGamepadButtonDown ||
+         aMessage == eGamepadButtonUp ||
+         aMessage == eGamepadAxisMove;
+#endif
+}
+
 nsresult
 EventStateManager::PreHandleEvent(nsPresContext* aPresContext,
                                   WidgetEvent* aEvent,
@@ -505,12 +529,12 @@ EventStateManager::PreHandleEvent(nsPresContext* aPresContext,
   WidgetMouseEvent* mouseEvent = aEvent->AsMouseEvent();
   if (aEvent->mFlags.mIsTrusted &&
       ((mouseEvent && mouseEvent->IsReal() &&
-        mouseEvent->mMessage != eMouseEnterIntoWidget &&
-        mouseEvent->mMessage != eMouseExitFromWidget) ||
+        IsMessageMouseUserActivity(mouseEvent->mMessage)) ||
        aEvent->mClass == eWheelEventClass ||
        aEvent->mClass == ePointerEventClass ||
        aEvent->mClass == eTouchEventClass ||
-       aEvent->mClass == eKeyboardEventClass)) {
+       aEvent->mClass == eKeyboardEventClass ||
+       IsMessageGamepadUserActivity(aEvent->mMessage))) {
     if (gMouseOrKeyboardEventCounter == 0) {
       nsCOMPtr<nsIObserverService> obs =
         mozilla::services::GetObserverService();
@@ -956,7 +980,9 @@ EventStateManager::ExecuteAccessKey(nsTArray<uint32_t>& aAccessCharCodes,
         if (focusChanged && aIsTrustedEvent) {
           // If this is a child process, inform the parent that we want the focus, but
           // pass false since we don't want to change the window order.
-          nsCOMPtr<nsITabChild> child = do_GetInterface(mPresContext->GetDocShell());
+          nsIDocShell* docShell = mPresContext->GetDocShell();
+          nsCOMPtr<nsITabChild> child =
+            docShell ? docShell->GetTabChild() : nullptr;
           if (child) {
             child->SendRequestFocus(false);
           }
@@ -1982,6 +2008,7 @@ EventStateManager::GetContentViewer(nsIContentViewer** aCv)
 
   nsCOMPtr<mozIDOMWindowProxy> focusedWindow;
   fm->GetFocusedWindow(getter_AddRefs(focusedWindow));
+  if (!focusedWindow) return NS_ERROR_FAILURE;
 
   auto* ourWindow = nsPIDOMWindowOuter::From(focusedWindow);
 
@@ -2479,9 +2506,8 @@ EventStateManager::GetScrollAmount(nsPresContext* aPresContext,
   if (!rootFrame) {
     return nsSize(0, 0);
   }
-  RefPtr<nsFontMetrics> fm;
-  nsLayoutUtils::GetFontMetricsForFrame(rootFrame, getter_AddRefs(fm),
-    nsLayoutUtils::FontSizeInflationFor(rootFrame));
+  RefPtr<nsFontMetrics> fm =
+    nsLayoutUtils::GetInflatedFontMetricsForFrame(rootFrame);
   NS_ENSURE_TRUE(fm, nsSize(0, 0));
   return nsSize(fm->AveCharWidth(), fm->MaxHeight());
 }
@@ -2566,6 +2592,8 @@ EventStateManager::DoScrollText(nsIScrollableFrame* aScrollableFrame,
     case WidgetWheelEvent::SCROLL_DEFAULT:
       if (isDeltaModePixel) {
         mode = nsIScrollableFrame::NORMAL;
+      } else if (aEvent->mFlags.mHandledByAPZ) {
+        mode = nsIScrollableFrame::SMOOTH_MSD;
       } else {
         mode = nsIScrollableFrame::SMOOTH;
       }
