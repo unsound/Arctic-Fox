@@ -2,9 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-export CC="gcc -flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16"
+export CC="gcc -flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-implicit-int"
 export CXX="g++ -flax-vector-conversions -fpermissive -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16"
-
 export LDFLAGS="-latomic"
 
 mk_add_options MOZ_MAKE_FLAGS="-s -j4"
