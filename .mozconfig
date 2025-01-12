@@ -2,8 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-export CC="gcc -flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-implicit-int -Wno-implicit-function-declaration -Wno-incompatible-pointer-types"
-export CXX="g++ -flax-vector-conversions -fpermissive -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-implicit-function-declaration -Wno-incompatible-pointer-types"
+export CPPFLAGS='-flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-implicit-int -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-int-conversion'
+export CFLAGS='-flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-implicit-int -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-int-conversion'
+export CXXFLAGS='-flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-implicit-int -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-int-conversion'
 export LDFLAGS="-latomic"
 
 mk_add_options MOZ_MAKE_FLAGS="-s -j4"
