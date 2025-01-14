@@ -4,7 +4,7 @@
 
 export CPPFLAGS='-flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-implicit-int -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-int-conversion'
 export CFLAGS='-flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-implicit-int -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-int-conversion'
-export CXXFLAGS='-flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-implicit-int -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-int-conversion'
+export CXXFLAGS='-flax-vector-conversions -falign-loops=16 -falign-functions=16 -falign-labels=16 -falign-jumps=16 -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types'
 export LDFLAGS="-latomic"
 
 mk_add_options MOZ_MAKE_FLAGS="-s -j4"
@@ -42,7 +42,7 @@ ac_add_options --disable-precompiled-startupcache
 # For convenience, if needed
 #ac_add_options --with-system-nspr
 #ac_add_options --with-system-nss
-#ac_add_options --with-system-icu
+ac_add_options --with-system-icu
 #ac_add_options --with-system-zlib
 #ac_add_options --with-system-bz2
 #ac_add_options --enable-system-hunspell
